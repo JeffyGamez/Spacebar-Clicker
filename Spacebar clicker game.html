@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Spacebar Clicker Version 1.0.0</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: white;
+    }
+    body {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #levelMenu {
+      width: 160px;
+      border-right: 1px solid #ccc;
+      padding: 10px;
+      background: #f5f0e6;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .levelButton, #creditsButton, #musicToggle {
+      background: #d2b48c;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      text-align: center;
+    }
+    .levelButton.active {
+      outline: 2px solid #8b5a2b;
+    }
+    #game {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      overflow: hidden;
+    }
+    #topBar {
+      flex: 0 0 auto;
+      margin-bottom: 10px;
+    }
+    #spacebarCount {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    #perSecond {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    #bigButton {
+      background: #d2b48c;
+      border: none;
+      padding: 22px 50px;
+      font-size: 26px;
+      cursor: pointer;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+    #bigButton:active {
+      transform: scale(0.97);
+    }
+    #info {
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    #shop {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+    .item {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #fdf7ee;
+    }
+    .itemHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .itemName {
+      font-weight: bold;
+    }
+    .itemButton {
+      background: #d2b48c;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .itemButton:disabled {
+      background: #e0d2bd;
+      cursor: default;
+    }
+    .itemDesc {
+      font-size: 13px;
+    }
+
+    /* Credits modal */
+    #creditsOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #creditsBox {
+      background: #fffaf0;
+      border-radius: 10px;
+      padding: 20px 30px;
+      border: 2px solid #d2b48c;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    #creditsBox h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    #creditsBox p {
+      margin: 4px 0;
+    }
+    #closeCredits {
+      margin-top: 12px;
+      background: #d2b48c;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT MENU -->
+  <div id="levelMenu">
+    <button class="levelButton active" data-level="1">Level 1</button>
+    <button class="levelButton" data-level="2">Level 2</button>
+    <button class="levelButton" data-level="3">Level 3</button>
+
+    <!-- MUSIC TOGGLE ABOVE CREDITS -->
+    <button id="musicToggle">Music: On</button>
+
+    <button id="creditsButton">Credits</button>
+  </div>
+
+  <!-- GAME AREA -->
+  <div id="game">
+    <div id="topBar">
+      <div id="spacebarCount">Spacebars: 0</div>
+      <div id="perSecond">Per second: 0</div>
+      <button id="bigButton">Click or press SPACEBAR</button>
+      <div id="info">
+        Buy up to 150 of each item. Prices go up 25% each time. Each new item base price is 40% more than the last.
+        Auto-clickers get 60% stronger and 10% faster each new item. Spacebar upgrades appear every 10 items in each level and stack.
+      </div>
+    </div>
+    <div id="shop"></div>
+  </div>
+
+  <!-- CREDITS MODAL -->
+  <div id="creditsOverlay">
+    <div id="creditsBox">
+      <h2>Spacebar Clicker</h2>
+      <p><strong>Version:</strong> 1.0.0</p>
+      <p><strong>Created by:</strong> JeffGamez</p>
+      <p><strong>Assistant:</strong> Microsoft Copilot</p>
+      <p><strong>Date:</strong> February 6, 2026</p>
+      <button id="closeCredits">Close</button>
+    </div>
+  </div>
+
+  <!-- AUDIO ELEMENTS -->
+  <audio id="bgm" loop>
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_110253.mp3?filename=soft-breeze-ambient-110253.mp3" type="audio/mpeg">
+  </audio>
+
+  <audio id="purchaseSound">
+    <source src="https://cdn.pixabay.com/download/audio/2021/09/20/audio_203456.mp3?filename=coin-collect-203456.mp3" type="audio/mpeg">
+  </audio>
+
+  <audio id="upgradeSound">
+    <source src="https://cdn.pixabay.com/download/audio/2021/09/20/audio_199919.mp3?filename=game-power-up-199919.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    /* -------------------------
+       CORE GAME STATE
+    ------------------------- */
+    let spacebars = 0;
+    let spacebarMultiplier = 1;
+    const maxPerItem = 150;
+
+    const levelItemCounts = { 1: 30, 2: 20, 3: 20 };
+    let currentLevel = 1;
+
+    const basePriceStart = 50;
+    const basePriceMultiplier = 1.4;
+    const priceIncreasePerBuy = 1.25;
+
+    const firstClicksPerFire = 1;
+    const firstInterval = 3;
+    const clicksPerFireMultiplier = 1.6;
+    const intervalMultiplier = 0.9;
+
+    const spacebarUpgradeMultipliers = [2, 4, 6, 8, 10, 12, 14];
+    let spacebarUpgradeIndex = 0;
+
+    const items = [];
+
+    /* -------------------------
+       AUDIO SETUP
+    ------------------------- */
+    const bgm = document.getElementById("bgm");
+    const purchaseSound = document.getElementById("purchaseSound");
+    const upgradeSound = document.getElementById("upgradeSound");
+
+    bgm.volume = 0.4;
+
+    let musicStarted = false;
+    let musicEnabled = true;
+
+    function startMusic() {
+      if (!musicStarted && musicEnabled) {
+        bgm.play().catch(() => {});
+        musicStarted = true;
+      }
+    }
+
+    document.getElementById("musicToggle").addEventListener("click", () => {
+      musicEnabled = !musicEnabled;
+      document.getElementById("musicToggle").textContent =
+        musicEnabled ? "Music: On" : "Music: Off";
+
+      if (musicEnabled) {
+        bgm.play().catch(() => {});
+      } else {
+        bgm.pause();
+      }
+    });
+
+    /* -------------------------
+       ITEM CREATION
+    ------------------------- */
+    function createItems() {
+      let basePrice = basePriceStart;
+      let clicksPerFire = firstClicksPerFire;
+      let interval = firstInterval;
+
+      const totalItems =
+        levelItemCounts[1] + levelItemCounts[2] + levelItemCounts[3];
+
+      for (let globalIndex = 1; globalIndex <= totalItems; globalIndex++) {
+        let level, localIndex;
+        if (globalIndex <= levelItemCounts[1]) {
+          level = 1;
+          localIndex = globalIndex;
+        } else if (globalIndex <= levelItemCounts[1] + levelItemCounts[2]) {
+          level = 2;
+          localIndex = globalIndex - levelItemCounts[1];
+        } else {
+          level = 3;
+          localIndex = globalIndex - levelItemCounts[1] - levelItemCounts[2];
+        }
+
+        let isSpacebarUpgrade = false;
+        if (localIndex % 10 === 0) {
+          if (level === 1 && localIndex <= 30) isSpacebarUpgrade = true;
+          if (level === 2 && localIndex <= 20) isSpacebarUpgrade = true;
+          if (level === 3 && localIndex <= 20) isSpacebarUpgrade = true;
+        }
+
+        let type = "auto";
+        let multiplier = 1;
+        let cps = 0;
+        let itemClicksPerFire = clicksPerFire;
+        let itemInterval = interval;
+
+        if (isSpacebarUpgrade && spacebarUpgradeIndex < spacebarUpgradeMultipliers.length) {
+          type = "spacebarUpgrade";
+          multiplier = spacebarUpgradeMultipliers[spacebarUpgradeIndex++];
+          itemClicksPerFire = 0;
+          itemInterval = 0;
+          cps = 0;
+        } else {
+          cps = itemClicksPerFire / itemInterval;
+        }
+
+        items.push({
+          globalIndex,
+          level,
+          localIndex,
+          name: type === "spacebarUpgrade"
+            ? `Spacebar Upgrade ${localIndex / 10} (L${level})`
+            : `Auto Clicker ${globalIndex}`,
+          basePrice,
+          owned: 0,
+          clicksPerFire: itemClicksPerFire,
+          interval: itemInterval,
+          cps,
+          type,
+          multiplier
+        });
+
+        basePrice *= basePriceMultiplier;
+        clicksPerFire *= clicksPerFireMultiplier;
+        interval *= intervalMultiplier;
+      }
+    }
+
+    /* -------------------------
+       DISPLAY HELPERS
+    ------------------------- */
+    function formatNumber(n) {
+      if (n >= 1_000_000) return n.toExponential(2);
+      if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      return n.toFixed(2).replace(/\.00$/, "");
+    }
+
+    function getItemPrice(item) {
+      return item.basePrice * Math.pow(priceIncreasePerBuy, item.owned);
+    }
+
+    function totalCPS() {
+      return items.reduce((sum, item) => {
+        if (item.type === "auto") return sum + item.cps * item.owned;
+        return sum;
+      }, 0);
+    }
+
+    function updateDisplay() {
+      document.getElementById("spacebarCount").textContent =
+        `Spacebars: ${formatNumber(spacebars)} (per press: ${formatNumber(spacebarMultiplier)})`;
+      document.getElementById("perSecond").textContent =
+        `Per second: ${formatNumber(totalCPS())}`;
+
+      items.forEach(item => {
+        const priceSpan = document.getElementById(`price-${item.globalIndex}`);
+        const ownedSpan = document.getElementById(`owned-${item.globalIndex}`);
+        const descSpan = document.getElementById(`desc-${item.globalIndex}`);
+        const btn = document.getElementById(`btn-${item.globalIndex}`);
+
+        if (!priceSpan || !ownedSpan || !descSpan || !btn) return;
+
+        const price = getItemPrice(item);
+        priceSpan.textContent = formatNumber(price);
+        ownedSpan.textContent = item.owned;
+
+        if (item.type === "auto") {
+          descSpan.textContent =
+            `Each unit: ${formatNumber(item.cps)} clicks/sec, fires every ${formatNumber(item.interval)}s.`;
+        } else {
+          descSpan.textContent =
+            `Multiplies your spacebar clicks by ×${item.multiplier} each time you buy it. (Stacks)`;
+        }
+
+        btn.disabled = (spacebars < price) || (item.owned >= maxPerItem);
+      });
+    }
+
+    /* -------------------------
+       SHOP UI
+    ------------------------- */
+    function buildShopUI() {
+      const shop = document.getElementById("shop");
+      shop.innerHTML = "";
+
+      items
+        .filter(item => item.level === currentLevel)
+        .forEach(item => {
+          const div = document.createElement("div");
+          div.className = "item";
+
+          const header = document.createElement("div");
+          header.className = "itemHeader";
+
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "itemName";
+          nameSpan.textContent = item.name;
+
+          const rightSpan = document.createElement("span");
+          rightSpan.innerHTML =
+            `Price: <span id="price-${item.globalIndex}"></span> | Owned: <span id="owned-${item.globalIndex}">0</span>`;
+
+          header.appendChild(nameSpan);
+          header.appendChild(rightSpan);
+
+          const desc = document.createElement("div");
+          desc.className = "itemDesc";
+          desc.id = `desc-${item.globalIndex}`;
+
+          const btn = document.createElement("button");
+          btn.className = "itemButton";
+          btn.id = `btn-${item.globalIndex}`;
+          btn.textContent = "Buy";
+          btn.addEventListener("click", () => buyItem(item.globalIndex));
+
+          div.appendChild(header);
+          div.appendChild(desc);
+          div.appendChild(btn);
+          shop.appendChild(div);
+        });
+
+      updateDisplay();
+    }
+
+    /* -------------------------
+       BUYING ITEMS
+    ------------------------- */
+    function buyItem(globalIndex) {
+      const item = items.find(it => it.globalIndex === globalIndex);
+      if (!item) return;
+
+      const price = getItemPrice(item);
+      if (spacebars >= price && item.owned < maxPerItem) {
+        spacebars -= price;
+        item.owned += 1;
+
+        if (item.type === "spacebarUpgrade") {
+          spacebarMultiplier *= item.multiplier;
+          upgradeSound.play().catch(() => {});
+        } else {
+          purchaseSound.play().catch(() => {});
+        }
+
+        updateDisplay();
+      }
+    }
+
+    /* -------------------------
+       MAIN LOOP
+    ------------------------- */
+    setInterval(() => {
+      const cps = totalCPS();
+      spacebars += cps / 10;
+      updateDisplay();
+    }, 100);
+
+    /* -------------------------
+       CLICKING
+    ------------------------- */
+    document.getElementById("bigButton").addEventListener("click", () => {
+      startMusic();
+      spacebars += spacebarMultiplier;
+      updateDisplay();
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        startMusic();
+        spacebars += spacebarMultiplier;
+        updateDisplay();
+      }
+    });
+
+    /* -------------------------
+       LEVEL MENU
+    ------------------------- */
+    document.querySelectorAll(".levelButton").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const level = Number(btn.dataset.level);
+        currentLevel = level;
+        document.querySelectorAll(".levelButton").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        buildShopUI();
+      });
+    });
+
+    /* -------------------------
+       CREDITS MODAL
+    ------------------------- */
+    const creditsOverlay = document.getElementById("creditsOverlay");
+    document.getElementById("creditsButton").addEventListener("click", () => {
+      creditsOverlay.style.display = "flex";
+    });
+    document.getElementById("closeCredits").addEventListener("click", () => {
+      creditsOverlay.style.display = "none";
+    });
+    creditsOverlay.addEventListener("click", (e) => {
+      if (e.target === creditsOverlay) {
+        creditsOverlay.style.display = "none";
+      }
+    });
+
+    /* -------------------------
+       INIT
+    ------------------------- */
+    createItems();
+    buildShopUI();
+  </script>
+</body>
+</html>
